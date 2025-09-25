@@ -1,17 +1,21 @@
-import React from 'react';
-import './globals.css';
+import React from 'react'
+import './globals.css'
 
-const Layout = ({ children }) => {
-    return (
-        <div className="flex">
-            <div className="w-1/2">
-                {children[0]} {/* Resume component will be placed here */}
-            </div>
-            <div className="w-1/2">
-                {children[1]} {/* Chatbot component will be placed here */}
-            </div>
-        </div>
-    );
-};
+export const metadata = {
+  title: 'Resume Builder - AI-Powered Resume Assistant',
+  description: 'Build and improve your resume with AI assistance',
+}
 
-export default Layout;
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body className="antialiased">
+        {children}
+      </body>
+    </html>
+  )
+}

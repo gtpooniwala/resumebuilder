@@ -1,9 +1,10 @@
-module.exports = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  images: {
-    domains: ['example.com'], // Add your image domains here
-  },
+  swcMinify: true,
   env: {
-    API_URL: process.env.API_URL || 'http://localhost:8000', // Backend API URL
+    API_URL: process.env.API_URL || 'http://localhost:8000',
   },
-};
+}
+
+module.exports = nextConfig

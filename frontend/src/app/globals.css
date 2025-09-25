@@ -1,32 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
-.container {
-    display: flex;
-    height: 100vh;
+/* Custom scrollbar for better aesthetics */
+.resume-container::-webkit-scrollbar,
+.chatbot-messages::-webkit-scrollbar {
+  width: 6px;
 }
 
-.resume {
-    flex: 1;
-    padding: 20px;
-    border-right: 1px solid #ccc;
+.resume-container::-webkit-scrollbar-track,
+.chatbot-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
 }
 
-.chatbot {
-    flex: 1;
-    padding: 20px;
+.resume-container::-webkit-scrollbar-thumb,
+.chatbot-messages::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
 }
 
-h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
-}
-
-p {
-    font-size: 16px;
-    line-height: 1.5;
+.resume-container::-webkit-scrollbar-thumb:hover,
+.chatbot-messages::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
