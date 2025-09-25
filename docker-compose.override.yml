@@ -1,0 +1,41 @@
+# Development overrides for docker-compose.yml
+# This file is automatically loaded by docker-compose in development
+
+services:
+  db:
+    # Faster startup with reduced durability (OK for development)
+    command: >
+      postgres -c shared_preload_libraries=''
+               -c fsync=off
+               -c synchronous_commit=off
+               -c full_page_writes=off
+               -c random_page_cost=1.0
+               -c effective_cache_size=1GB
+               -c shared_buffers=256MB
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+
+  backend:
+    # Development environment variables
+    environment:
+      - DEBUG=1
+      - LOG_LEVEL=debug
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    # Fast restart
+    restart: "no"
+
+  frontend:
+    # Development optimizations
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - FAST_REFRESH=true
+      - NEXT_WEBPACK=false  # Disable webpack for faster builds
+    # Fast restart
+    restart: "no"
+    # Additional dev dependencies volume for hot reload
+    volumes:
+      - ./frontend/src:/app/src:cached  # Cached mount for better performance on macOS
+      - ./frontend/public:/app/public:cached
