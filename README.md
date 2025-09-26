@@ -1,27 +1,43 @@
-# Resume Builder App
+# AI-Powered Resume Builder
 
-This project is a Resume Builder application that allows users to interact with a chatbot to improve their resumes. The application is structured with a separate backend and frontend, utilizing FastAPI for the backend and Next.js for the frontend.
+An intelligent resume builder application that uses AI agents to help users create, edit, and optimize their resumes through natural language conversations. The system features a React frontend with an AI chatbot powered by LangGraph and OpenAI, backed by a FastAPI backend with PostgreSQL storage.
 
-## Project Structure
+## 🚀 Key Features
 
-The project is organized as follows:
+- **AI-Powered Chat Interface**: Natural language conversations to edit and improve resumes
+- **LangGraph Agent System**: Intelligent tool orchestration for resume operations
+- **Real-time Resume Editing**: Direct database modifications through AI tools
+- **Session Management**: Persistent chat sessions with conversation history
+- **Change Tracking**: Monitor and log all resume modifications
+- **Comprehensive Tool Monitoring**: Detailed logging of AI agent tool usage
+- **Responsive Design**: Modern React frontend with Tailwind CSS
+
+## 🏗️ Architecture
 
 ```
-resume-builder-app
-├── backend                # Backend application using FastAPI
-│   ├── app                # Main application package
-│   ├── requirements.txt    # Python dependencies
-│   ├── Dockerfile          # Dockerfile for backend
-│   └── .env.example        # Example environment variables
-├── frontend               # Frontend application using Next.js
-│   ├── src                # Source files for the frontend
-│   ├── package.json       # npm dependencies and scripts
-│   ├── next.config.js     # Next.js configuration
-│   ├── tailwind.config.js  # Tailwind CSS configuration
-│   └── tsconfig.json      # TypeScript configuration
-├── docker-compose.yml     # Docker Compose configuration
-├── .gitignore             # Git ignore file
-└── README.md              # Project documentation
+resumebuilder/
+├── backend/                    # FastAPI + LangGraph Backend
+│   ├── app/
+│   │   ├── api/               # REST API endpoints
+│   │   ├── database/          # PostgreSQL models and connections
+│   │   ├── models/            # Pydantic data models
+│   │   └── services/          # Core business logic
+│   │       ├── chat_service.py      # LangGraph agent orchestration
+│   │       ├── resume_tools.py      # AI tools for resume operations
+│   │       ├── conversation_manager.py # Session & history management
+│   │       └── context_manager.py   # Context window management
+│   ├── tests/                 # Test suite
+│   └── requirements.txt       # Python dependencies
+├── frontend/                  # Next.js + TypeScript Frontend
+│   └── src/
+│       ├── app/               # Next.js 13+ app router
+│       └── components/        # React components
+│           ├── CollapsibleChatbot.tsx  # Main chat interface
+│           ├── ChatHistory.tsx         # Session management UI
+│           ├── Resume.tsx              # Resume display component
+│           └── ProfileSidebar.tsx      # User profile sidebar
+├── docker-compose.yml         # Multi-container orchestration
+└── TODO.md                   # Development roadmap
 ```
 
 ## Setup Instructions
@@ -96,22 +112,92 @@ docker-compose up db -d
 
 ### Environment Variables
 
-The application uses the following default environment variables in Docker:
-- `DATABASE_URL`: postgresql://user:password@db:5432/resume_builder
-- `NEXT_PUBLIC_API_URL`: http://localhost:8000
+#### Required Backend Variables
+```bash
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key_here
 
-For production deployment, create appropriate `.env` files in the backend and frontend directories.
+# Database Configuration (handled by Docker Compose)
+DATABASE_URL=postgresql://user:password@db:5432/resume_builder
 
-## TODO
+# Logging Level (optional)
+LOG_LEVEL=INFO
+```
 
-- Implement user management for multiple users in the backend and frontend.
+#### Frontend Variables
+```bash
+# API Endpoint
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-## Features
+**Note**: For local development with Docker, only `OPENAI_API_KEY` needs to be set. Create a `.env` file in the backend directory with your OpenAI API key.
 
-- Chatbot interface to interact with users and provide suggestions for resume improvement.
-- Display of the resume on the left side of the application with a fixed HTML template.
-- Responsive design using Tailwind CSS.
+## 🤖 AI Agent System
 
-## License
+The application uses **LangGraph** to orchestrate an intelligent agent system with the following capabilities:
 
-This project is licensed under the MIT License.
+### Available Tools
+- `get_full_profile` - Retrieves complete user resume data
+- `get_resume_section` - Gets specific resume sections (skills, experience, etc.)
+- `edit_professional_summary` - Updates the professional summary
+- `update_work_experience` - Adds/edits/removes work experience entries
+- `manage_skills` - Manages technical and soft skills
+- `search_resume_content` - Searches through resume content
+
+### Agent Behavior
+- **Intelligent Tool Selection**: Automatically chooses appropriate tools based on user requests
+- **Context Awareness**: Maintains conversation context and session history
+- **Action-Oriented**: Makes direct changes to the database rather than just providing suggestions
+- **Comprehensive Logging**: Tracks all tool usage with detailed monitoring
+
+## 📊 Current Status
+
+### ✅ Completed Features
+- Core chat interface with collapsible sidebar (500px width)
+- Session management and chat history
+- Complete backend API with 6 resume editing tools
+- PostgreSQL database with proper schema
+- Docker containerization for easy deployment
+- Comprehensive tool monitoring and logging system
+- Change tracking and conversation management
+
+### 🚧 In Progress / Known Issues
+- **LLM Tool Usage**: Agent currently uses read tools but needs improvement in edit tool usage
+- **Frontend Data Integration**: ProfileSidebar needs connection to real API data
+- **Chat History UI**: Component exists but needs full functionality implementation
+
+### 📋 Development Roadmap
+See [TODO.md](./TODO.md) for detailed development priorities and planned features.
+
+## 🛠️ Technology Stack
+
+- **Frontend**: Next.js 13+, TypeScript, React, Tailwind CSS
+- **Backend**: FastAPI, Python 3.12+
+- **AI/ML**: LangGraph, OpenAI GPT, LangChain
+- **Database**: PostgreSQL with SQLAlchemy ORM
+- **Infrastructure**: Docker, Docker Compose
+- **Testing**: pytest, React Testing Library
+
+## 📚 Documentation
+
+- **[Agents.md](./Agents.md)** - Detailed explanation of the AI agent system, architecture, and behavior patterns
+- **[TODO.md](./TODO.md)** - Development roadmap and planned features
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For questions or support, please:
+1. Check the [Agents.md](./Agents.md) for system behavior details
+2. Review the [TODO.md](./TODO.md) for known issues
+3. Open an issue on GitHub for bugs or feature requests

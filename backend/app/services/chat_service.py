@@ -35,7 +35,7 @@ class ResumeAgentService:
         self.llm = ChatOpenAI(
             model="gpt-5",
             temperature=0.7,
-            api_key=os.getenv("OPENAI_API_KEY")
+            api_key=os.getenv("OPENAI_API_KEY") # type: ignore
         )
         
         # Get available tools
@@ -80,7 +80,7 @@ class ResumeAgentService:
         workflow.add_edge("respond", END)
         
         # Compile the graph
-        return workflow.compile()
+        return workflow.compile() # type: ignore
     
     def _chatbot_with_tools_node(self, state: SimpleAgentState) -> SimpleAgentState:
         """
