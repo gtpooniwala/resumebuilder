@@ -113,12 +113,10 @@ class ConversationManager:
     
     def get_session_id(self, user_id: str) -> str:
         """
-        Get or create a session ID for the user.
-        Creates a new session if the last one is older than timeout.
+        Get or create a session ID for a user.
+        Returns existing session if available, otherwise creates a new one.
         """
         try:
-            session_timeout = timedelta(minutes=30)  # 30 minute session timeout
-            
             with SessionLocal() as db:
                 # Get the most recent message for this user
                 recent_message = db.query(ChatConversationTable).filter(
@@ -126,19 +124,33 @@ class ConversationManager:
                 ).order_by(ChatConversationTable.created_at.desc()).first()
                 
                 if recent_message:
-                    # Check if the session is still active
-                    time_since_last = datetime.utcnow() - recent_message.created_at
-                    if time_since_last < session_timeout:
-                        return recent_message.session_id
+                    return recent_message.session_id
                 
-                # Create new session
-                new_session_id = f"session_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+                # Create new session with UUID to ensure uniqueness
+                unique_id = str(uuid.uuid4())[:8]
+                new_session_id = f"session_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{unique_id}"
                 logger.info(f"Created new session {new_session_id} for user {user_id}")
                 return new_session_id
                 
         except Exception as e:
             logger.error(f"Failed to get session ID: {str(e)}")
-            return f"session_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            unique_id = str(uuid.uuid4())[:8]
+            return f"session_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{unique_id}"
+    
+    def create_new_session(self, user_id: str) -> str:
+        """
+        Explicitly create a new session for a user.
+        Use this when you want to start a fresh conversation.
+        """
+        try:
+            unique_id = str(uuid.uuid4())[:8]
+            new_session_id = f"session_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{unique_id}"
+            logger.info(f"Created new session {new_session_id} for user {user_id}")
+            return new_session_id
+        except Exception as e:
+            logger.error(f"Failed to create new session ID: {str(e)}")
+            unique_id = str(uuid.uuid4())[:8]
+            return f"session_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{unique_id}"
     
     def _get_or_create_session_id(self, user_id: str) -> str:
         """Helper to get or create session ID"""

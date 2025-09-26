@@ -15,7 +15,10 @@ class TestResumeEditingTools:
         """Test getting work experience section"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.get_resume_section(test_user_id, "experience")
+        result = ResumeEditingTools.get_resume_section.invoke({
+            "user_id": test_user_id, 
+            "section_name": "experience"
+        })
         
         assert result["success"] is True
         assert result["section"] == "experience"
@@ -32,7 +35,10 @@ class TestResumeEditingTools:
         """Test getting contact information section"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.get_resume_section(test_user_id, "contact")
+        result = ResumeEditingTools.get_resume_section.invoke({
+            "user_id": test_user_id, 
+            "section_name": "contact"
+        })
         
         assert result["success"] is True
         assert result["section"] == "contact"
@@ -44,7 +50,10 @@ class TestResumeEditingTools:
         """Test getting skills section""" 
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.get_resume_section(test_user_id, "skills")
+        result = ResumeEditingTools.get_resume_section.invoke({
+            "user_id": test_user_id, 
+            "section_name": "skills"
+        })
         
         assert result["success"] is True
         assert result["section"] == "skills"
@@ -56,14 +65,20 @@ class TestResumeEditingTools:
         """Test getting invalid section"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.get_resume_section(test_user_id, "invalid_section")
+        result = ResumeEditingTools.get_resume_section.invoke({
+            "user_id": test_user_id, 
+            "section_name": "invalid_section"
+        })
         
         assert result["success"] is False
         assert "Unknown section" in result["error"]
     
     def test_get_resume_section_no_user(self):
         """Test getting section for non-existent user"""
-        result = ResumeEditingTools.get_resume_section("non-existent", "experience")
+        result = ResumeEditingTools.get_resume_section.invoke({
+            "user_id": "non-existent", 
+            "section_name": "experience"
+        })
         
         assert result["success"] is False
         assert "No resume found" in result["error"]
@@ -72,7 +87,9 @@ class TestResumeEditingTools:
         """Test getting complete profile information"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.get_full_profile(test_user_id)
+        result = ResumeEditingTools.get_full_profile.invoke({
+            "user_id": test_user_id
+        })
         
         assert result["success"] is True
         profile_data = result["data"]
@@ -92,15 +109,15 @@ class TestWorkExperienceManagement:
         test_user_id, _, resume_id = setup_test_user
         
         # Get initial experience count
-        initial_result = ResumeEditingTools.get_resume_section(test_user_id, "experience")
+        initial_result = ResumeEditingTools.get_resume_section.invoke({"user_id": test_user_id, "section_name": "experience"})
         initial_count = len(initial_result["data"])
         
         # Add new experience
-        result = ResumeEditingTools.update_work_experience(
-            user_id=test_user_id,
-            experience_data=sample_work_experience,
-            action="add"
-        )
+        result = ResumeEditingTools.update_work_experience.invoke({
+            "user_id": test_user_id,
+            "experience_data": sample_work_experience,
+            "action": "add"
+        })
         
         assert result["success"] is True
         assert "Successfully added work experience" in result["message"]
@@ -136,12 +153,12 @@ class TestWorkExperienceManagement:
             "description": "Updated description with new responsibilities"
         }
         
-        result = ResumeEditingTools.update_work_experience(
-            user_id=test_user_id,
-            experience_data=updates,
-            action="update",
-            experience_index=0
-        )
+        result = ResumeEditingTools.update_work_experience.invoke({
+            "user_id": test_user_id,
+            "experience_data": updates,
+            "action": "update",
+            "experience_index": 0
+        })
         
         assert result["success"] is True
         assert "Successfully updated work experience" in result["message"]
@@ -161,23 +178,23 @@ class TestWorkExperienceManagement:
         test_user_id, _, resume_id = setup_test_user
         
         # First add an experience to remove
-        ResumeEditingTools.update_work_experience(
-            user_id=test_user_id,
-            experience_data=sample_work_experience,
-            action="add"
-        )
+        ResumeEditingTools.update_work_experience.invoke({
+            "user_id": test_user_id,
+            "experience_data": sample_work_experience,
+            "action": "add"
+        })
         
         # Get current count
-        current_result = ResumeEditingTools.get_resume_section(test_user_id, "experience")
+        current_result = ResumeEditingTools.get_resume_section.invoke({"user_id": test_user_id, "section_name": "experience"})
         current_count = len(current_result["data"])
         
         # Remove experience (index 1 - the one we just added)
-        result = ResumeEditingTools.update_work_experience(
-            user_id=test_user_id,
-            experience_data={},
-            action="remove",
-            experience_index=1
-        )
+        result = ResumeEditingTools.update_work_experience.invoke({
+            "user_id": test_user_id,
+            "experience_data": {},
+            "action": "remove",
+            "experience_index": 1
+        })
         
         assert result["success"] is True
         assert "Successfully removed work experience" in result["message"]
@@ -199,11 +216,11 @@ class TestWorkExperienceManagement:
             # Missing title and start_date
         }
         
-        result = ResumeEditingTools.update_work_experience(
-            user_id=test_user_id,
-            experience_data=incomplete_data,
-            action="add"
-        )
+        result = ResumeEditingTools.update_work_experience.invoke({
+            "user_id": test_user_id,
+            "experience_data": incomplete_data,
+            "action": "add"
+        })
         
         assert result["success"] is False
         assert "Missing required field" in result["error"]
@@ -212,12 +229,12 @@ class TestWorkExperienceManagement:
         """Test updating with invalid index"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.update_work_experience(
-            user_id=test_user_id,
-            experience_data={"title": "New Title"},
-            action="update",
-            experience_index=999  # Invalid index
-        )
+        result = ResumeEditingTools.update_work_experience.invoke({
+            "user_id": test_user_id,
+            "experience_data": {"title": "New Title"},
+            "action": "update",
+            "experience_index": 999  # Invalid index
+        })
         
         assert result["success"] is False
         assert "Invalid experience index" in result["error"]
@@ -232,7 +249,7 @@ class TestProfessionalSummaryManagement:
         
         new_summary = "Experienced software engineer with 8+ years of expertise in full-stack development and cloud technologies."
         
-        result = ResumeEditingTools.edit_professional_summary(test_user_id, new_summary)
+        result = ResumeEditingTools.edit_professional_summary.invoke({"user_id": test_user_id, "new_summary": new_summary})
         
         assert result["success"] is True
         assert "Successfully updated professional summary" in result["message"]
@@ -246,7 +263,7 @@ class TestProfessionalSummaryManagement:
     
     def test_edit_professional_summary_no_user(self):
         """Test updating summary for non-existent user"""
-        result = ResumeEditingTools.edit_professional_summary("non-existent", "New summary")
+        result = ResumeEditingTools.edit_professional_summary.invoke({"user_id": "non-existent", "new_summary": "New summary"})
         
         assert result["success"] is False
         assert "No resume found" in result["error"]
@@ -261,11 +278,11 @@ class TestSkillsManagement:
         
         new_skills = ["Go", "Kubernetes", "AWS"]
         
-        result = ResumeEditingTools.manage_skills(
-            user_id=test_user_id,
-            skills_data=new_skills,
-            action="add"
-        )
+        result = ResumeEditingTools.manage_skills.invoke({
+            "user_id": test_user_id,
+            "skills_data": new_skills,
+            "action": "add"
+        })
         
         assert result["success"] is True
         assert "Successfully added skills" in result["message"]
@@ -287,11 +304,11 @@ class TestSkillsManagement:
         
         skills_to_remove = ["JavaScript", "React"]
         
-        result = ResumeEditingTools.manage_skills(
-            user_id=test_user_id,
-            skills_data=skills_to_remove,
-            action="remove"
-        )
+        result = ResumeEditingTools.manage_skills.invoke({
+            "user_id": test_user_id,
+            "skills_data": skills_to_remove,
+            "action": "remove"
+        })
         
         assert result["success"] is True
         assert "Successfully removed skills" in result["message"]
@@ -311,11 +328,11 @@ class TestSkillsManagement:
         
         new_skills = ["Java", "Spring Boot", "MySQL", "Redis"]
         
-        result = ResumeEditingTools.manage_skills(
-            user_id=test_user_id,
-            skills_data=new_skills,
-            action="replace"
-        )
+        result = ResumeEditingTools.manage_skills.invoke({
+            "user_id": test_user_id,
+            "skills_data": new_skills,
+            "action": "replace"
+        })
         
         assert result["success"] is True
         assert "Successfully replaced skills" in result["message"]
@@ -339,16 +356,16 @@ class TestSkillsManagement:
             "Databases": ["MySQL", "MongoDB"]
         }
         
-        result = ResumeEditingTools.manage_skills(
-            user_id=test_user_id,
-            skills_data=categorized_skills,
-            action="add"
-        )
+        result = ResumeEditingTools.manage_skills.invoke({
+            "user_id": test_user_id,
+            "skills_data": categorized_skills,
+            "action": "add"
+        })
         
         assert result["success"] is True
         
         # Verify skills are flattened and added
-        final_result = ResumeEditingTools.get_resume_section(test_user_id, "skills")
+        final_result = ResumeEditingTools.get_resume_section.invoke({"user_id": test_user_id, "section_name": "skills"})
         skills_list = final_result["data"]
         
         assert "Java" in skills_list
@@ -364,7 +381,7 @@ class TestResumeContentSearch:
         """Test searching in experience section"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.search_resume_content(test_user_id, "Tech Corp")
+        result = ResumeEditingTools.search_resume_content.invoke({"user_id": test_user_id, "query": "Tech Corp"})
         
         assert result["success"] is True
         assert result["query"] == "Tech Corp"
@@ -379,7 +396,7 @@ class TestResumeContentSearch:
         """Test searching in skills section"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.search_resume_content(test_user_id, "Python")
+        result = ResumeEditingTools.search_resume_content.invoke({"user_id": test_user_id, "query": "Python"})
         
         assert result["success"] is True
         assert result["total_matches"] >= 1
@@ -393,7 +410,7 @@ class TestResumeContentSearch:
         """Test searching in summary section"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.search_resume_content(test_user_id, "software engineer")
+        result = ResumeEditingTools.search_resume_content.invoke({"user_id": test_user_id, "query": "software engineer"})
         
         assert result["success"] is True
         assert result["total_matches"] >= 1
@@ -406,7 +423,7 @@ class TestResumeContentSearch:
         """Test searching with no matches"""
         test_user_id, _, _ = setup_test_user
         
-        result = ResumeEditingTools.search_resume_content(test_user_id, "nonexistentterm")
+        result = ResumeEditingTools.search_resume_content.invoke({"user_id": test_user_id, "query": "nonexistentterm"})
         
         assert result["success"] is True
         assert result["total_matches"] == 0
@@ -421,10 +438,9 @@ class TestResumeVersioning:
         test_user_id, _, resume_id = setup_test_user
         
         # Make a change that should create a version
-        ResumeEditingTools.edit_professional_summary(
-            test_user_id, 
-            "Updated summary to create a version"
-        )
+        ResumeEditingTools.edit_professional_summary.invoke({"user_id": 
+            test_user_id, "new_summary": "Updated summary to create a version"
+        })
         
         # Check that version was created
         with SessionLocal() as db:

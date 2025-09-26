@@ -358,17 +358,30 @@ class ResumeEditingTools:
                     }
                 
                 # Get current skills
-                current_skills = json.loads(resume.skills) if resume.skills else []
-                original_skills = current_skills.copy()
+                current_skills_raw = json.loads(resume.skills) if resume.skills else {}
+                original_skills = current_skills_raw.copy() if isinstance(current_skills_raw, dict) else current_skills_raw[:]
                 
-                # Handle different skill formats
+                # Ensure we have a proper skills structure
+                if isinstance(current_skills_raw, list):
+                    # Convert old flat list format to categorized format
+                    current_skills = {"technical": current_skills_raw, "soft": []}
+                elif isinstance(current_skills_raw, dict):
+                    current_skills = current_skills_raw
+                else:
+                    current_skills = {"technical": [], "soft": []}
+                
+                # Ensure required categories exist
+                if "technical" not in current_skills:
+                    current_skills["technical"] = []
+                if "soft" not in current_skills:
+                    current_skills["soft"] = []
+                
+                # Handle different skill input formats
                 if isinstance(skills_data, list):
-                    new_skills = skills_data
+                    # Assume technical skills if not categorized
+                    new_skills = {"technical": skills_data}
                 elif isinstance(skills_data, dict):
-                    # Convert categorized skills to flat list
-                    new_skills = []
-                    for category, skills_list in skills_data.items():
-                        new_skills.extend(skills_list)
+                    new_skills = skills_data
                 else:
                     return {
                         "success": False,
@@ -379,18 +392,28 @@ class ResumeEditingTools:
                 # Perform action
                 if action.lower() == "add":
                     # Add new skills (avoid duplicates)
-                    for skill in new_skills:
-                        if skill.strip() and skill.strip() not in current_skills:
-                            current_skills.append(skill.strip())
-                            
+                    for category, skills_list in new_skills.items():
+                        if category not in current_skills:
+                            current_skills[category] = []
+                        for skill in skills_list:
+                            skill = skill.strip()
+                            if skill and skill not in current_skills[category]:
+                                current_skills[category].append(skill)
+                                
                 elif action.lower() == "remove":
                     # Remove specified skills
-                    current_skills = [skill for skill in current_skills if skill not in new_skills]
-                    
+                    for category, skills_list in new_skills.items():
+                        if category in current_skills:
+                            current_skills[category] = [
+                                skill for skill in current_skills[category] 
+                                if skill not in skills_list
+                            ]
+                            
                 elif action.lower() == "replace":
-                    # Replace all skills
-                    current_skills = [skill.strip() for skill in new_skills if skill.strip()]
-                    
+                    # Replace skills in specified categories
+                    for category, skills_list in new_skills.items():
+                        current_skills[category] = [skill.strip() for skill in skills_list if skill.strip()]
+                        
                 else:
                     return {
                         "success": False,

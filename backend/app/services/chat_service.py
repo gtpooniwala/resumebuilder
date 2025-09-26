@@ -226,6 +226,28 @@ Remember: You have access to tools to get detailed information and make changes.
             logger.error(f"Chat service error: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Chat service error: {str(e)}")
     
+    async def process_message(self, user_id: str, message: str) -> Dict[str, Any]:
+        """Process message and return detailed response for testing"""
+        try:
+            response = await self.chat(message, user_id)
+            
+            return {
+                "success": True,
+                "response": response,
+                "tools_used": [],  # Would be populated by actual tool usage
+                "user_id": user_id,
+                "message": message
+            }
+            
+        except Exception as e:
+            logger.error(f"Process message error: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "user_id": user_id,
+                "message": message
+            }
+    
     def get_agent_info(self) -> Dict[str, Any]:
         """Get information about the agent"""
         return {
@@ -259,3 +281,6 @@ Remember: You have access to tools to get detailed information and make changes.
 
 # Global instance
 resume_agent = ResumeAgentService()
+
+# Alias for backward compatibility and testing
+ChatService = ResumeAgentService

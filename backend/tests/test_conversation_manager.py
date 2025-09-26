@@ -112,8 +112,8 @@ class TestConversationManager:
             db.commit()
     
     def test_session_management(self, test_user_id):
-        """Test session creation and timeout"""
-        # Get new session
+        """Test session creation and persistence"""
+        # Get new session (should create one since no messages exist)
         session_id_1 = conversation_manager.get_session_id(test_user_id)
         assert session_id_1 is not None
         assert test_user_id in session_id_1
@@ -134,18 +134,10 @@ class TestConversationManager:
         session_id_2 = conversation_manager.get_session_id(test_user_id)
         assert session_id_1 == session_id_2
         
-        # Simulate old session (over 30 minutes)
-        with SessionLocal() as db:
-            db.query(ChatConversationTable).filter(
-                ChatConversationTable.user_id == test_user_id
-            ).update({
-                "created_at": datetime.utcnow() - timedelta(minutes=31)
-            })
-            db.commit()
-        
-        # Get session again (should create new session)
-        session_id_3 = conversation_manager.get_session_id(test_user_id)
+        # Explicitly create a new session
+        session_id_3 = conversation_manager.create_new_session(test_user_id)
         assert session_id_3 != session_id_1
+        assert test_user_id in session_id_3
         
         # Cleanup
         with SessionLocal() as db:
@@ -271,14 +263,14 @@ class TestConversationManager:
                     session_id="test-session",
                     message_type="human",
                     content="Message 1",
-                    created_at=datetime.utcnow() - timedelta(days=1)
+                    created_at=datetime.utcnow() - timedelta(days=8)  # Outside 7 days
                 ),
                 ChatConversationTable(
                     user_id=test_user_id,
                     session_id="test-session",
                     message_type="ai",
                     content="Response 1", 
-                    created_at=datetime.utcnow() - timedelta(hours=1)
+                    created_at=datetime.utcnow() - timedelta(hours=1)  # Within 7 days
                 )
             ]
             for msg in messages:

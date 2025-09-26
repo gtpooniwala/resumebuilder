@@ -11,14 +11,14 @@ from sqlalchemy.orm import sessionmaker
 from unittest.mock import Mock, AsyncMock
 
 # Set test environment
-os.environ["DATABASE_URL"] = "postgresql://postgres:password@localhost:5433/resumebuilder"
+os.environ["DATABASE_URL"] = "postgresql://user:password@localhost:5433/resume_builder"
 os.environ["OPENAI_API_KEY"] = "test-key"
 
 from app.database.models import Base, ProfileTable, ResumeTable, ChatConversationTable, ResumeVersionTable
 from app.database.connection import SessionLocal
 
 # Test database setup
-TEST_DATABASE_URL = "postgresql://postgres:password@localhost:5433/resumebuilder"
+TEST_DATABASE_URL = "postgresql://user:password@localhost:5433/resume_builder"
 
 
 @pytest.fixture

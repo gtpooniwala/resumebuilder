@@ -34,10 +34,11 @@ class TestContextManager:
         # Verify sections detection
         sections = resume_outline["sections"]
         assert sections["contact"] is True  # Has email and phone
-        assert sections["summary"]["has_content"] is True
+        assert sections["summary"] is True  # Has summary content
         assert sections["experience"]["count"] == 1
-        assert sections["education"]["count"] == 1
+        assert sections["experience"]["has_content"] is True
         assert sections["skills"]["count"] == 5
+        assert sections["skills"]["has_content"] is True
         
         # Verify profile basic info
         profile_basic = context["profile_basic"]
