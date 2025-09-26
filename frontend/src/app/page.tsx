@@ -149,7 +149,7 @@ export default function Home() {
     ]
   });
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = async (message: string) => {
     const newMessage: Message = {
       type: 'user',
       message,
@@ -158,15 +158,48 @@ export default function Home() {
     
     setMessages(prev => [...prev, newMessage]);
     
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // Call the LangGraph chat API
+      const response = await fetch('http://localhost:8000/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          user_id: profileData.id,
+          context: {
+            profile: profileData,
+            resume: resumeData
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
       const botResponse: Message = {
         type: 'bot',
-        message: generateBotResponse(message),
+        message: data.response,
         timestamp: new Date()
       };
+      
       setMessages(prev => [...prev, botResponse]);
-    }, 1000);
+    } catch (error) {
+      console.error('Chat API error:', error);
+      
+      // Fallback to local response
+      const fallbackResponse: Message = {
+        type: 'bot',
+        message: "I'm sorry, I'm having trouble connecting to the chat service right now. Please try again later.",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, fallbackResponse]);
+    }
   };
 
   const generateBotResponse = (userMessage: string): string => {
