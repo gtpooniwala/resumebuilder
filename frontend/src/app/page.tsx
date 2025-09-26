@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Resume from '@/components/Resume';
 import CollapsibleChatbot from '@/components/CollapsibleChatbot';
 import ProfileSidebar from '@/components/ProfileSidebar';
+import ChatHistory from '@/components/ChatHistory';
 
 interface Message {
   type: 'user' | 'bot';
@@ -104,6 +105,9 @@ export default function Home() {
     }
   });
 
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
+
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       name: "John Doe", 
@@ -168,6 +172,7 @@ export default function Home() {
         body: JSON.stringify({
           message: message,
           user_id: profileData.id,
+          session_id: currentSessionId,
           context: {
             profile: profileData,
             resume: resumeData
@@ -268,8 +273,94 @@ export default function Home() {
           messages={messages}
           onSendMessage={handleSendMessage}
           onResumeUpdate={handleResumeUpdate}
+          onNewSession={async () => {
+            try {
+              // Create new session via API
+              const response = await fetch('http://localhost:8000/chat/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: profileData.id })
+              });
+              
+              if (response.ok) {
+                const data = await response.json();
+                setCurrentSessionId(data.session_id);
+                setMessages([{
+                  type: 'bot',
+                  message: 'Hello! I\'m here to help you improve your resume. What would you like to work on today?',
+                  timestamp: new Date()
+                }]);
+                console.log('Started new chat session:', data.session_id);
+              }
+            } catch (error) {
+              console.error('Failed to create new session:', error);
+              // Fallback to local session
+              setCurrentSessionId(undefined);
+              setMessages([{
+                type: 'bot',
+                message: 'Hello! I\'m here to help you improve your resume. What would you like to work on today?',
+                timestamp: new Date()
+              }]);
+            }
+          }}
+          onShowHistory={() => {
+            setShowChatHistory(true);
+          }}
         />
       </div>
+
+      {/* Chat History Modal */}
+      <ChatHistory
+        userId={profileData.id}
+        currentSessionId={currentSessionId}
+        isVisible={showChatHistory}
+        onClose={() => setShowChatHistory(false)}
+        onNewSession={async () => {
+          setShowChatHistory(false);
+          try {
+            const response = await fetch('http://localhost:8000/chat/sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: profileData.id })
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              setCurrentSessionId(data.session_id);
+              setMessages([{
+                type: 'bot',
+                message: 'Hello! I\'m here to help you improve your resume. What would you like to work on today?',
+                timestamp: new Date()
+              }]);
+            }
+          } catch (error) {
+            console.error('Failed to create new session from history:', error);
+          }
+        }}
+        onSessionSelect={async (sessionId: string) => {
+          try {
+            // Load session messages
+            const response = await fetch(
+              `http://localhost:8000/chat/sessions/${sessionId}?user_id=${profileData.id}&limit=100`
+            );
+            
+            if (response.ok) {
+              const sessionMessages = await response.json();
+              const convertedMessages = sessionMessages.map((msg: any) => ({
+                type: msg.type === 'human' ? 'user' : 'bot',
+                message: msg.message,
+                timestamp: new Date(msg.timestamp)
+              }));
+              
+              setCurrentSessionId(sessionId);
+              setMessages(convertedMessages);
+              setShowChatHistory(false);
+            }
+          } catch (error) {
+            console.error('Failed to load session messages:', error);
+          }
+        }}
+      />
     </div>
   );
 }

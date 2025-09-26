@@ -9,12 +9,14 @@ interface Message {
 }
 
 interface ChatbotProps {
-  messages: Message[];
-  onSendMessage: (message: string) => void;
-  onResumeUpdate: (data: any) => void;
+  messages?: Message[];
+  onSendMessage?: (message: string) => void;
+  onResumeUpdate?: (data: any) => void;
+  onNewSession?: () => void;
+  onShowHistory?: () => void;
 }
 
-export default function Chatbot({ messages, onSendMessage, onResumeUpdate }: ChatbotProps) {
+export default function Chatbot({ messages = [], onSendMessage, onResumeUpdate, onNewSession, onShowHistory }: ChatbotProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -37,7 +39,7 @@ export default function Chatbot({ messages, onSendMessage, onResumeUpdate }: Cha
     setIsTyping(true);
 
     // Send message to parent component
-    onSendMessage(message);
+    onSendMessage?.(message);
 
     // Simulate typing delay
     setTimeout(() => {
@@ -96,7 +98,7 @@ export default function Chatbot({ messages, onSendMessage, onResumeUpdate }: Cha
           {quickActions.map((action, index) => (
             <button
               key={index}
-              onClick={() => onSendMessage(action)}
+              onClick={() => onSendMessage?.(action)}
               className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors duration-200"
             >
               {action}

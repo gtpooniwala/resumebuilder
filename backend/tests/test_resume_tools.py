@@ -2,6 +2,7 @@
 Tests for Resume Editing Tools - Core Resume Modification Functionality
 """
 import json
+import pytest
 
 from app.services.resume_tools import ResumeEditingTools, ResumeVersionManager
 from app.database.models import ResumeTable, ResumeVersionTable
@@ -9,64 +10,72 @@ from app.database.connection import SessionLocal
 
 
 class TestResumeEditingTools:
-    """Test Resume Editing Tools functionality"""
+    """Test Resume Editing Tools functionality using seeded profile-1 data"""
     
-    def test_get_resume_section_experience(self, setup_test_user):
-        """Test getting work experience section"""
-        test_user_id, _, _ = setup_test_user
-        
+    def test_get_resume_section_experience(self):
+        """Test getting work experience section with real seeded data"""
         result = ResumeEditingTools.get_resume_section.invoke({
-            "user_id": test_user_id, 
+            "user_id": "profile-1", 
             "section_name": "experience"
         })
         
         assert result["success"] is True
         assert result["section"] == "experience"
         assert isinstance(result["data"], list)
-        assert len(result["data"]) == 1
+        assert len(result["data"]) == 3  # We seeded 3 experiences
         
-        # Verify experience data structure
+        # Verify first experience data structure (Tech Corp)
         experience = result["data"][0]
         assert experience["company"] == "Tech Corp"
-        assert experience["title"] == "Software Engineer"
-        assert experience["start_date"] == "2020-01"
+        assert experience["position"] == "Senior Software Engineer"
+        assert experience["duration"] == "2021 - Present"
+        assert "Lead development of microservices" in experience["description"]
     
-    def test_get_resume_section_contact(self, setup_test_user):
-        """Test getting contact information section"""
-        test_user_id, _, _ = setup_test_user
-        
+    def test_get_resume_section_contact(self):
+        """Test getting contact information section with real seeded data"""        
         result = ResumeEditingTools.get_resume_section.invoke({
-            "user_id": test_user_id, 
+            "user_id": "profile-1", 
             "section_name": "contact"
         })
         
         assert result["success"] is True
         assert result["section"] == "contact"
         assert result["data"]["name"] == "John Doe"
-        assert result["data"]["email"] == "john.doe@example.com"
-        assert result["data"]["phone"] == "+1-555-0123"
+        assert result["data"]["email"] == "john.doe@email.com"
+        assert result["data"]["phone"] == "(555) 123-4567"
+        assert result["data"]["location"] == "San Francisco, CA"
+        assert result["data"]["linkedin"] == "linkedin.com/in/johndoe"
+        assert result["data"]["website"] == "johndoe.dev"
     
-    def test_get_resume_section_skills(self, setup_test_user):
-        """Test getting skills section""" 
-        test_user_id, _, _ = setup_test_user
-        
+    def test_get_resume_section_skills(self):
+        """Test getting skills section with real seeded data""" 
         result = ResumeEditingTools.get_resume_section.invoke({
-            "user_id": test_user_id, 
+            "user_id": "profile-1", 
             "section_name": "skills"
         })
         
         assert result["success"] is True
         assert result["section"] == "skills"
-        assert isinstance(result["data"], list)
-        expected_skills = ["Python", "JavaScript", "React", "PostgreSQL", "Docker"]
-        assert result["data"] == expected_skills
-    
-    def test_get_resume_section_invalid(self, setup_test_user):
-        """Test getting invalid section"""
-        test_user_id, _, _ = setup_test_user
+        assert isinstance(result["data"], dict)  # Skills are categorized in our seeded data
         
+        # Check for technical skills
+        assert "technical" in result["data"]
+        technical_skills = result["data"]["technical"]
+        assert "JavaScript" in technical_skills
+        assert "TypeScript" in technical_skills
+        assert "React" in technical_skills
+        assert "Python" in technical_skills
+        
+        # Check for soft skills
+        assert "soft" in result["data"]
+        soft_skills = result["data"]["soft"]
+        assert "Leadership" in soft_skills
+        assert "Communication" in soft_skills
+    
+    def test_get_resume_section_invalid(self):
+        """Test getting invalid section"""
         result = ResumeEditingTools.get_resume_section.invoke({
-            "user_id": test_user_id, 
+            "user_id": "profile-1", 
             "section_name": "invalid_section"
         })
         
@@ -83,20 +92,23 @@ class TestResumeEditingTools:
         assert result["success"] is False
         assert "No resume found" in result["error"]
     
-    def test_get_full_profile(self, setup_test_user):
-        """Test getting complete profile information"""
-        test_user_id, _, _ = setup_test_user
-        
+    def test_get_full_profile(self):
+        """Test getting complete profile information with real seeded data"""
         result = ResumeEditingTools.get_full_profile.invoke({
-            "user_id": test_user_id
+            "user_id": "profile-1"
         })
         
         assert result["success"] is True
         profile_data = result["data"]
         assert profile_data["name"] == "John Doe"
-        assert profile_data["title"] == "Software Engineer"
-        assert profile_data["email"] == "john.doe@example.com"
-        assert profile_data["subscription_plan"] == "free"
+        assert profile_data["title"] == "Senior Software Engineer"
+        assert profile_data["email"] == "john.doe@email.com"
+        assert profile_data["phone"] == "(555) 123-4567"
+        assert profile_data["location"] == "San Francisco, CA"
+        assert profile_data["linkedin"] == "linkedin.com/in/johndoe"
+        assert profile_data["website"] == "johndoe.dev"
+        assert profile_data["subscription_plan"] == "pro"
+        assert profile_data["resumes_created"] == 3
         assert "id" in profile_data
         assert "last_active" in profile_data
 

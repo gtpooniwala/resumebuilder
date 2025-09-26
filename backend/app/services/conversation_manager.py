@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, timedelta
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..database.connection import SessionLocal
 from ..database.models import ChatConversationTable
 import logging
@@ -266,6 +267,143 @@ class ConversationManager:
             logger.error(f"Failed to clear old conversations: {str(e)}")
             return 0
     
+    def get_user_sessions(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Get all chat sessions for a user with metadata.
+        
+        Args:
+            user_id: User identifier
+            limit: Maximum number of sessions to return
+            
+        Returns:
+            List of session data with metadata
+        """
+        try:
+            with SessionLocal() as db:
+                # Get session details with message counts and last activity
+                session_details = db.query(
+                    ChatConversationTable.session_id,
+                    func.count(ChatConversationTable.id).label('message_count'),
+                    func.min(ChatConversationTable.created_at).label('created_at'),
+                    func.max(ChatConversationTable.created_at).label('last_activity'),
+                    ChatConversationTable.content.label('first_message_content')
+                ).filter(
+                    ChatConversationTable.user_id == user_id
+                ).group_by(ChatConversationTable.session_id).order_by(
+                    func.max(ChatConversationTable.created_at).desc()
+                ).limit(limit).all()
+                
+                sessions = []
+                for session in session_details:
+                    # Get the first human message for session title
+                    first_human_message = db.query(ChatConversationTable).filter(
+                        ChatConversationTable.user_id == user_id,
+                        ChatConversationTable.session_id == session.session_id,
+                        ChatConversationTable.message_type == 'human'
+                    ).order_by(ChatConversationTable.created_at.asc()).first()
+                    
+                    # Create a session title from first message or timestamp
+                    if first_human_message:
+                        title = first_human_message.content[:50] + ("..." if len(first_human_message.content) > 50 else "")
+                    else:
+                        title = f"Chat Session {session.created_at.strftime('%m/%d %H:%M')}"
+                    
+                    sessions.append({
+                        "session_id": session.session_id,
+                        "title": title,
+                        "message_count": session.message_count,
+                        "created_at": session.created_at.isoformat(),
+                        "last_activity": session.last_activity.isoformat(),
+                        "is_active": (datetime.utcnow() - session.last_activity).days < 1
+                    })
+                
+                logger.info(f"Retrieved {len(sessions)} sessions for user {user_id}")
+                return sessions
+                
+        except Exception as e:
+            logger.error(f"Failed to get user sessions: {str(e)}")
+            return []
+    
+    def get_session_messages(self, user_id: str, session_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        Get all messages for a specific session.
+        
+        Args:
+            user_id: User identifier
+            session_id: Session identifier
+            limit: Maximum number of messages to return
+            
+        Returns:
+            List of messages in chronological order
+        """
+        try:
+            with SessionLocal() as db:
+                messages = db.query(ChatConversationTable).filter(
+                    ChatConversationTable.user_id == user_id,
+                    ChatConversationTable.session_id == session_id
+                ).order_by(ChatConversationTable.created_at.asc()).limit(limit).all()
+                
+                return [{
+                    "id": msg.id,
+                    "type": msg.message_type,
+                    "message": msg.content,
+                    "timestamp": msg.created_at.isoformat(),
+                    "metadata": json.loads(msg.message_metadata) if msg.message_metadata else None
+                } for msg in messages]
+                
+        except Exception as e:
+            logger.error(f"Failed to get session messages: {str(e)}")
+            return []
+    
+    def delete_session(self, user_id: str, session_id: str) -> bool:
+        """
+        Delete a specific chat session and all its messages.
+        
+        Args:
+            user_id: User identifier
+            session_id: Session identifier to delete
+            
+        Returns:
+            True if session was deleted successfully
+        """
+        try:
+            with SessionLocal() as db:
+                deleted_count = db.query(ChatConversationTable).filter(
+                    ChatConversationTable.user_id == user_id,
+                    ChatConversationTable.session_id == session_id
+                ).delete()
+                
+                db.commit()
+                
+                if deleted_count > 0:
+                    logger.info(f"Deleted session {session_id} with {deleted_count} messages for user {user_id}")
+                    return True
+                else:
+                    logger.warning(f"No session found to delete: {session_id} for user {user_id}")
+                    return False
+                
+        except Exception as e:
+            logger.error(f"Failed to delete session: {str(e)}")
+            return False
+    
+    def rename_session(self, user_id: str, session_id: str, new_title: str) -> bool:
+        """
+        Rename a chat session by updating metadata.
+        Note: This would require adding a title field to the database schema.
+        For now, this is a placeholder for future implementation.
+        
+        Args:
+            user_id: User identifier
+            session_id: Session identifier
+            new_title: New title for the session
+            
+        Returns:
+            True if session was renamed successfully
+        """
+        # TODO: Implement when session titles are added to database schema
+        logger.info(f"Session rename requested for {session_id}: '{new_title}' (not yet implemented)")
+        return False
+    
     def get_user_conversation_stats(self, user_id: str) -> Dict[str, Any]:
         """
         Get conversation statistics for a user.
@@ -275,6 +413,10 @@ class ConversationManager:
                 total_messages = db.query(ChatConversationTable).filter(
                     ChatConversationTable.user_id == user_id
                 ).count()
+                
+                total_sessions = db.query(ChatConversationTable.session_id).filter(
+                    ChatConversationTable.user_id == user_id
+                ).distinct().count()
                 
                 recent_messages = db.query(ChatConversationTable).filter(
                     ChatConversationTable.user_id == user_id,
@@ -287,13 +429,14 @@ class ConversationManager:
                 
                 return {
                     "total_messages": total_messages,
+                    "total_sessions": total_sessions,
                     "recent_messages_7days": recent_messages,
                     "last_activity": last_activity.created_at.isoformat() if last_activity else None
                 }
                 
         except Exception as e:
             logger.error(f"Failed to get conversation stats: {str(e)}")
-            return {"total_messages": 0, "recent_messages_7days": 0, "last_activity": None}
+            return {"total_messages": 0, "total_sessions": 0, "recent_messages_7days": 0, "last_activity": None}
 
 
 # Global instance

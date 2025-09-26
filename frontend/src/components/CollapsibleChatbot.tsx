@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface Message {
   type: 'user' | 'bot';
@@ -12,9 +12,11 @@ interface CollapsibleChatbotProps {
   messages: Message[];
   onSendMessage: (message: string) => void;
   onResumeUpdate: (data: any) => void;
+  onNewSession?: () => void;
+  onShowHistory?: () => void;
 }
 
-export default function CollapsibleChatbot({ messages, onSendMessage, onResumeUpdate }: CollapsibleChatbotProps) {
+export default function CollapsibleChatbot({ messages, onSendMessage, onResumeUpdate, onNewSession, onShowHistory }: CollapsibleChatbotProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -62,7 +64,7 @@ export default function CollapsibleChatbot({ messages, onSendMessage, onResumeUp
 
   return (
     <div className={`bg-white border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
-      isExpanded ? 'w-96' : 'w-16'
+      isExpanded ? 'w-[500px]' : 'w-16'
     }`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-600 to-teal-600">
@@ -75,14 +77,40 @@ export default function CollapsibleChatbot({ messages, onSendMessage, onResumeUp
                 </svg>
                 <h2 className="text-lg font-semibold">AI Assistant</h2>
               </div>
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
+              <div className="flex items-center space-x-2">
+                {/* Chat History Button */}
+                <button
+                  onClick={onShowHistory}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded transition-colors"
+                  title="Chat History"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {/* New Chat Button */}
+                <button
+                  onClick={onNewSession}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded transition-colors"
+                  title="Start New Chat"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {/* Collapse Button */}
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded transition-colors"
+                  title="Collapse Chat"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </>
           ) : (
             <button

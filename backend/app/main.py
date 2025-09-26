@@ -1,8 +1,25 @@
+import logging
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as api_router
 from app.api.profile_routes import router as profile_router
 from app.database.connection import create_tables
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+# Set specific loggers to appropriate levels
+logging.getLogger("app.services.chat_service").setLevel(logging.INFO)
+logging.getLogger("app.services.resume_tools").setLevel(logging.INFO)
+logging.getLogger("httpcore").setLevel(logging.WARNING)  # Reduce HTTP client noise
+logging.getLogger("httpx").setLevel(logging.WARNING)     # Reduce HTTP client noise
 
 app = FastAPI()
 
