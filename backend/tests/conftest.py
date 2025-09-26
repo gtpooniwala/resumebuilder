@@ -1,0 +1,157 @@
+"""
+Test configuration and fixtures for resume builder tests
+"""
+import pytest
+import asyncio
+import os
+import uuid
+from datetime import datetime
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from unittest.mock import Mock, AsyncMock
+
+# Set test environment
+os.environ["DATABASE_URL"] = "postgresql://postgres:password@localhost:5433/resumebuilder"
+os.environ["OPENAI_API_KEY"] = "test-key"
+
+from app.database.models import Base, ProfileTable, ResumeTable, ChatConversationTable, ResumeVersionTable
+from app.database.connection import SessionLocal
+
+# Test database setup
+TEST_DATABASE_URL = "postgresql://postgres:password@localhost:5433/resumebuilder"
+
+
+@pytest.fixture
+def test_user_id():
+    """Generate a unique test user ID"""
+    return f"test-user-{uuid.uuid4()}"
+
+
+@pytest.fixture
+def test_session_id():
+    """Generate a unique test session ID"""  
+    return f"test-session-{uuid.uuid4()}"
+
+
+@pytest.fixture
+def sample_profile_data():
+    """Sample profile data for testing"""
+    return {
+        "name": "John Doe",
+        "title": "Software Engineer", 
+        "email": "john.doe@example.com",
+        "phone": "+1-555-0123",
+        "location": "San Francisco, CA",
+        "linkedin": "https://linkedin.com/in/johndoe",
+        "website": "https://johndoe.dev",
+        "bio": "Experienced software engineer with 5+ years in full-stack development"
+    }
+
+
+@pytest.fixture
+def sample_resume_data():
+    """Sample resume data for testing"""
+    return {
+        "name": "John Doe",
+        "title": "Software Engineer",
+        "email": "john.doe@example.com", 
+        "phone": "+1-555-0123",
+        "location": "San Francisco, CA",
+        "linkedin": "https://linkedin.com/in/johndoe",
+        "website": "https://johndoe.dev",
+        "summary": "Experienced software engineer with expertise in Python, JavaScript, and cloud technologies.",
+        "experience": '[{"id": "exp1", "company": "Tech Corp", "title": "Software Engineer", "start_date": "2020-01", "end_date": "Present", "description": "Developed web applications using Python and React"}]',
+        "education": '[{"id": "edu1", "institution": "University of California", "degree": "BS Computer Science", "start_date": "2016", "end_date": "2020"}]',
+        "skills": '["Python", "JavaScript", "React", "PostgreSQL", "Docker"]'
+    }
+
+
+@pytest.fixture
+def sample_work_experience():
+    """Sample work experience data"""
+    return {
+        "company": "New Tech Company",
+        "title": "Senior Software Engineer", 
+        "start_date": "2023-01",
+        "end_date": "Present",
+        "description": "Led development of microservices architecture using Python and Docker",
+        "location": "Remote"
+    }
+
+
+@pytest.fixture
+def mock_openai_response():
+    """Mock OpenAI API response"""
+    mock_response = Mock()
+    mock_response.content = "I'll help you update your resume. Let me use the tools to make those changes."
+    mock_response.tool_calls = []
+    return mock_response
+
+
+@pytest.fixture 
+def mock_llm():
+    """Mock LLM for testing without API calls"""
+    mock = Mock()
+    mock.invoke = Mock(return_value=mock_openai_response())
+    mock.bind_tools = Mock(return_value=mock)
+    return mock
+
+
+@pytest.fixture
+async def test_db_session():
+    """Create test database session"""
+    with SessionLocal() as session:
+        yield session
+
+
+@pytest.fixture
+def setup_test_user(test_user_id, sample_profile_data, sample_resume_data):
+    """Set up a test user with profile and resume"""
+    with SessionLocal() as db:
+        # Create profile
+        profile = ProfileTable(
+            id=test_user_id,
+            **sample_profile_data,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(profile)
+        
+        # Create resume
+        resume = ResumeTable(
+            id=f"resume-{test_user_id}",
+            profile_id=test_user_id,
+            **sample_resume_data,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(resume)
+        
+        db.commit()
+        
+        yield test_user_id, profile.id, resume.id
+        
+        # Cleanup
+        db.query(ResumeVersionTable).filter(ResumeVersionTable.user_id == test_user_id).delete()
+        db.query(ChatConversationTable).filter(ChatConversationTable.user_id == test_user_id).delete()
+        db.query(ResumeTable).filter(ResumeTable.profile_id == test_user_id).delete()
+        db.query(ProfileTable).filter(ProfileTable.id == test_user_id).delete()
+        db.commit()
+
+
+def assert_database_change(db, table, filter_condition, expected_changes):
+    """Helper to assert database changes"""
+    record = db.query(table).filter(filter_condition).first()
+    assert record is not None, "Record not found in database"
+    
+    for field, expected_value in expected_changes.items():
+        actual_value = getattr(record, field)
+        assert actual_value == expected_value, f"Expected {field}={expected_value}, got {actual_value}"
+
+
+def create_mock_tool_call(tool_name, **kwargs):
+    """Helper to create mock tool calls"""
+    return {
+        "name": tool_name,
+        "args": kwargs
+    }
